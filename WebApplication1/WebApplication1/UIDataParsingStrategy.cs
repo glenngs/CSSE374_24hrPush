@@ -12,7 +12,7 @@ namespace CourseValidationSystem
     public interface UIDataParsingStrategy
     {
 
-        public CourseList parseInputDataString(string inputJsonString);
+        CourseList parseInputDataString(string inputJsonString);
 
 
         /*

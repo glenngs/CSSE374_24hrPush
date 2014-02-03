@@ -22,5 +22,33 @@ namespace CourseValidationSystem
         {
             this.courseList.Add(toAdd);
         }
+
+        // ALL these lines can be replaced by using an equality comparer
+        // ==================================
+        public bool containsString(string courseName)
+        {
+            foreach (Course co in courseList)
+            {
+                if (co.courseId == courseName)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public Course findCourse(string courseName)
+        {
+            foreach (Course co in courseList)
+            {
+                if (co.courseId.ToLower() == courseName.ToLower())
+                {
+                    return co;
+                }
+            }
+            return null;
+        }
+
+        // ==================================
     }
 }

@@ -11,3 +11,5 @@ namespace CourseValidationSystem
         public string Class;
     }
 }
+
+// [{"TermCode":"201420", "Class":"CSSE120"},{"TermCode":"201430", "Class":"CSSE220"}]

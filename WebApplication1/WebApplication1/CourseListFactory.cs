@@ -19,7 +19,7 @@ namespace CourseValidationSystem
 
         public CourseList parseJsonToCourseList(string inputJsonString)
         {
-            List<UIInputDataInterfaceObject> parsedTable = Newtonsoft.Json.JsonConvert.DeserializeObject<List<UIInputDataInterfaceObject>>(inputJsonString);
+            List<UIInputDataInterfaceObject> parsedTable = JsonConvert.DeserializeObject<List<UIInputDataInterfaceObject>>(inputJsonString);
 
             CourseList list = new CourseList();
 
