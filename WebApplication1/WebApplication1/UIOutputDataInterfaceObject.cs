@@ -15,5 +15,9 @@ namespace CourseValidationSystem
             this.ErrorMessage = errorMessage;
             this.Class = classID;
         }
+
+        public UIOutputDataInterfaceObject()
+        {
+        }
     }
 }

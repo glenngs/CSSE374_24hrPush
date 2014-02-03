@@ -25,7 +25,7 @@ namespace CourseValidationSystem
             strategy = new NonSessionStrategy();
         }
 
-        public string parseInputDataGiveResponse(string inputJSONString)
+        public List<UIOutputDataInterfaceObject> parseInputDataGiveResponse(string inputJSONString)
         {
             // Parse input data here by using strategy
             CourseList parsedCourseList = strategy.parseInputDataString(inputJSONString);

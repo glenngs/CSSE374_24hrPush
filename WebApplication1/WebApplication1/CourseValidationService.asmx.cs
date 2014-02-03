@@ -32,7 +32,16 @@ namespace CourseValidationSystem
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public string isClassScheduleValid(string input)
         {
-            return dataParser.parseInputDataGiveResponse(input);
+            try
+            {
+                List<UIOutputDataInterfaceObject> returnable = dataParser.parseInputDataGiveResponse(input);
+
+                return JsonConvert.SerializeObject(returnable);
+            }
+            catch(Exception e)
+            {
+                return "Fail" + e.Message;
+            }
         }
 
     }

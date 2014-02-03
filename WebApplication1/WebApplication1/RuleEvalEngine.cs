@@ -233,7 +233,7 @@ namespace CourseValidationSystem
 
         }
 
-        public string evaluateCourseList(CourseList inputCourseList)
+        public List<UIOutputDataInterfaceObject> evaluateCourseList(CourseList inputCourseList)
         {
             List<UIOutputDataInterfaceObject> outputData = new List<UIOutputDataInterfaceObject>();
 
@@ -311,7 +311,7 @@ namespace CourseValidationSystem
                 }
             }
             
-            return JsonConvert.SerializeObject(outputData);
+            return outputData;
         }
 
         private CourseOfferingEnum parseYearTermToEnum(int year, int inputNum)
