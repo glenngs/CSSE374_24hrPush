@@ -12,8 +12,9 @@ namespace CourseValidationSystem
     public class RuleEvalEngine
     {
 
-        private Dictionary<Course, Course> prerequisites;
-        private Dictionary<Course, Course> corequisites;
+        private Dictionary<string, List<string>> prerequisites;
+        private Dictionary<string, List<string>> corequisites;
+        private Dictionary<string, int> termOffered;
 
         public RuleEvalEngine()
         {

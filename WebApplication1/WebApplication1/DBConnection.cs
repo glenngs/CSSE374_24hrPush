@@ -13,9 +13,9 @@ namespace CourseValidationSystem
     {
         public DBConnection()
         {
-            //
-            // TODO: Add constructor logic here
-            //
+            
+
+
         }
     }
 }

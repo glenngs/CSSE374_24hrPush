@@ -9,13 +9,18 @@ using System.Web;
 
 namespace CourseValidationSystem
 {
-    public class Course
+    public class Course : IEquatable<Course>
     {
-        public Course()
+        public string courseId;
+
+        public Course(string courseId)
         {
-            //
-            // TODO: Add constructor logic here
-            //
+            this.courseId = courseId;
+        }
+
+        public bool Equals(Course other)
+        {
+            return (other.courseId == this.courseId);
         }
     }
 }
