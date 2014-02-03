@@ -8,13 +8,18 @@ using System.Web;
 /// </summary>
 namespace CourseValidationSystem
 {
-    public class NonSessionStrategy
+    public class NonSessionStrategy : UIDataParsingStrategy
     {
+        private CourseListFactory factory;
+
         public NonSessionStrategy()
         {
-            //
-            // TODO: Add constructor logic here
-            //
+            this.factory = new CourseListFactory();
+        }
+
+        public CourseList parseInputDataString(string inputJsonString)
+        {
+            return factory.parseJsonToCourseList(inputJsonString);
         }
     }
 }

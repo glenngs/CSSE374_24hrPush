@@ -28,6 +28,8 @@ namespace CourseValidationSystem
             // Parse input data here by using strategy
             CourseList parsedCourseList = new CourseList();
 
+
+
             evaluationEngine.evaluateCourseList(parsedCourseList);
 
             // Re-Summarize results into return JSON string

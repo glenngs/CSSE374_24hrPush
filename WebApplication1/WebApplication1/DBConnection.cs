@@ -14,8 +14,6 @@ namespace CourseValidationSystem
         public DBConnection()
         {
             
-
-
         }
     }
 }

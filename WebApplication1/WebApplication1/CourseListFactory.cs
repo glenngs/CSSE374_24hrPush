@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using Newtonsoft.Json;
 
 /// <summary>
 /// Summary description for CourseListFactory
@@ -13,9 +14,24 @@ namespace CourseValidationSystem
     {
         public CourseListFactory()
         {
-            //
-            // TODO: Add constructor logic here
-            //
+            
+        }
+
+        public CourseList parseJsonToCourseList(string inputJsonString)
+        {
+            List<UIInputDataInterfaceObject> parsedTable = Newtonsoft.Json.JsonConvert.DeserializeObject<List<UIInputDataInterfaceObject>>(inputJsonString);
+
+            CourseList list = new CourseList();
+
+            foreach (UIInputDataInterfaceObject toParse in parsedTable)
+            {
+                string courseId = toParse.Class;
+                int yearSet = Convert.ToInt32(toParse.TermCode.Substring(0, 4));
+                int termSet = Convert.ToInt32(toParse.TermCode.Substring(4, 2));
+                list.addCourse(new Course(courseId, yearSet, termSet));
+            }
+
+            return list;
         }
     }
 }

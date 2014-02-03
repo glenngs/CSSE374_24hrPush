@@ -9,13 +9,19 @@ using System.Web;
 
 namespace CourseValidationSystem
 {
-    public class UIDataParsingStrategy
+    public interface UIDataParsingStrategy
     {
+
+        public CourseList parseInputDataString(string inputJsonString);
+
+
+        /*
         public UIDataParsingStrategy()
         {
             //
             // TODO: Add constructor logic here
             //
         }
+         */
     }
 }

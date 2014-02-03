@@ -28,13 +28,6 @@ namespace CourseValidationSystem
             
         }
 
-
-        [WebMethod]
-        public string HelloWorld()
-        {
-            return "Hello World";
-        }
-
         [WebMethod]
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public string isClassScheduleValid(string input)
