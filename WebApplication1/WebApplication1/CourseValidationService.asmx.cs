@@ -30,17 +30,38 @@ namespace CourseValidationSystem
 
         [WebMethod]
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-        public string isClassScheduleValid(string input)
+        public void isClassScheduleValid(string input)
         {
             try
             {
                 List<UIOutputDataInterfaceObject> returnable = dataParser.parseInputDataGiveResponse(input);
 
-                return JsonConvert.SerializeObject(returnable);
+                string strResponse = JsonConvert.SerializeObject(returnable);
+                string strCallback = Context.Request.QueryString["callback"]; // Get callback method name. e.g. jQuery17019982320107502116_1378635607531
+
+                strResponse = strCallback + strResponse; // e.g. jQuery17019982320107502116_1378635607531(....) 
+
+                Context.Response.Clear(); 
+                Context.Response.ContentType = "application/json"; 
+                Context.Response.AddHeader("content-length", strResponse.Length.ToString()); 
+                Context.Response.Flush(); 
+
+                Context.Response.Write(strResponse);
+
             }
             catch(Exception e)
             {
-                return "Fail" + e.Message;
+                string strResponse = "Fail" + e.Message;
+                string strCallback = Context.Request.QueryString["callback"]; // Get callback method name. e.g. jQuery17019982320107502116_1378635607531
+
+                strResponse = strCallback + strResponse; // e.g. jQuery17019982320107502116_1378635607531(....) 
+
+                Context.Response.Clear();
+                Context.Response.ContentType = "application/json";
+                Context.Response.AddHeader("content-length", strResponse.Length.ToString());
+                Context.Response.Flush();
+
+                Context.Response.Write(strResponse);
             }
         }
 

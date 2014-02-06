@@ -35,6 +35,8 @@ namespace CourseValidationSystem
         private Dictionary<string, List<string>> corequisites;
         private Dictionary<string, CourseOfferingEnum> termOffered;
 
+        private static CourseOfferingEnum defaultTermOffered = (CourseOfferingEnum.AllFall | CourseOfferingEnum.AllSpring | CourseOfferingEnum.AllWinter);
+
 
         public RuleEvalEngine()
         {
@@ -240,7 +242,17 @@ namespace CourseValidationSystem
             foreach (Course currentCourse in inputCourseList.courseList)
             {
                 // Check Prereqs/Coreqs
-                List<string> coursePrereqs = prerequisites[currentCourse.courseId];
+                List<string> coursePrereqs;
+
+                if (!prerequisites.ContainsKey(currentCourse.courseId))
+                {
+                    coursePrereqs = new List<string>();
+                }
+                else
+                {
+                    coursePrereqs = prerequisites[currentCourse.courseId];
+                }
+                
 
                 // Failure Variables
                 bool preAndCoRequisitesValid = true;
@@ -288,16 +300,29 @@ namespace CourseValidationSystem
                     // All prereqs on their schedule
                     // Ensure offered on possible term
 
+                    CourseOfferingEnum termClassOffered;
+                    if (!termOffered.ContainsKey(currentCourse.courseId))
+                    {
+                        termClassOffered = RuleEvalEngine.defaultTermOffered;
+                        // TODO
+                        // Throw Error Message
+                    }
+                    else
+                    {
+                        termClassOffered = termOffered[currentCourse.courseId];
+                    }
+
+
                     CourseOfferingEnum thisCourseOffered = parseYearTermToEnum(currentCourse.year, currentCourse.term);
-                    if ((thisCourseOffered & termOffered[currentCourse.courseId]) == 0)
+                    if ((thisCourseOffered & termClassOffered) == 0)
                     {
                         // Failed to find a term when this is offered
-                        outputData.Add(new UIOutputDataInterfaceObject("FAIL Class not offered on desired term " + thisCourseOffered + " ... " + termOffered[currentCourse.courseId], currentCourse.courseId));
+                        outputData.Add(new UIOutputDataInterfaceObject(("Class not offered on desired term " + thisCourseOffered + " ... " + termClassOffered).ToUpper(), (currentCourse.courseId).ToUpper()));
                     }
                     else{
                     
                         // Wow it all worked! 
-                        outputData.Add(new UIOutputDataInterfaceObject("OK", currentCourse.courseId));
+                        //outputData.Add(new UIOutputDataInterfaceObject("OK", currentCourse.courseId));
                     }
 
                 }
@@ -306,8 +331,8 @@ namespace CourseValidationSystem
                     
                     string missingClassesError = "Missing PrerequisiteClasses: " + string.Join(", ", missingCourses.ToArray());
                     string classesOutOfOrder = " Out of Order Classes: " + string.Join(", ", outOfOrderCourses.ToArray());
-                    string totalErrorMessage = "FAIL " + missingClassesError + classesOutOfOrder;
-                    outputData.Add(new UIOutputDataInterfaceObject(totalErrorMessage, currentCourse.courseId));
+                    string totalErrorMessage = (missingClassesError + classesOutOfOrder).ToUpper();
+                    outputData.Add(new UIOutputDataInterfaceObject(totalErrorMessage, (currentCourse.courseId).ToUpper()));
                 }
             }
             
