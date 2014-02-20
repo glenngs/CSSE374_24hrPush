@@ -17,7 +17,7 @@ namespace CourseValidationSystem
 
         public Course(string courseId, int year, int term)
         {
-            this.courseId = courseId.ToLower();
+            this.courseId = courseId;
             this.year = year;
             this.term = term;
         }
@@ -29,7 +29,7 @@ namespace CourseValidationSystem
 
         public bool Equals(string other)
         {
-            return (other == this.courseId);
+            return (other.ToUpper() == this.courseId.ToUpper());
         }
     }
 }

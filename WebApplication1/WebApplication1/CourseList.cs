@@ -23,13 +23,34 @@ namespace CourseValidationSystem
             this.courseList.Add(toAdd);
         }
 
+        private class NewEqComp : IEqualityComparer<Course>
+        {
+
+            public bool Equals(Course x, Course y)
+            {
+                throw new NotImplementedException();
+            }
+
+            public int GetHashCode(Course obj)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         // ALL these lines can be replaced by using an equality comparer
         // ==================================
-        public bool containsString(string courseName)
+
+        // contains course
+        // this.courseList.Contains<IEquatable<string>>(courseName)
+
+        // find course
+        // this.courseList.Find(i => i.Equals(courseName))
+
+        public bool containsCourseId(string courseName)
         {
-            foreach (Course co in courseList)
+            foreach (Course crs in courseList)
             {
-                if (co.courseId == courseName)
+                if (crs.courseId.ToUpper() == courseName.ToUpper())
                 {
                     return true;
                 }
@@ -37,18 +58,7 @@ namespace CourseValidationSystem
             return false;
         }
 
-        public Course findCourse(string courseName)
-        {
-            foreach (Course co in courseList)
-            {
-                if (co.courseId.ToLower() == courseName.ToLower())
-                {
-                    return co;
-                }
-            }
-            return null;
-        }
-
         // ==================================
+
     }
 }

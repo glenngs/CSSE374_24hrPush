@@ -16,7 +16,7 @@ namespace CourseValidationSystem
     [WebServiceBinding(ConformsTo = WsiProfiles.BasicProfile1_1)]
     [System.ComponentModel.ToolboxItem(false)]
     // To allow this Web Service to be called from script, using ASP.NET AJAX, uncomment the following line. 
-    // [System.Web.Script.Services.ScriptService]
+    [System.Web.Script.Services.ScriptService]
     public class CourseValidationService : System.Web.Services.WebService
     {
 
@@ -51,7 +51,7 @@ namespace CourseValidationSystem
             }
             catch(Exception e)
             {
-                string strResponse = "Fail" + e.Message;
+                string strResponse = "{'FAIL: " + e.Message + "'}";
                 string strCallback = Context.Request.QueryString["callback"]; // Get callback method name. e.g. jQuery17019982320107502116_1378635607531
 
                 strResponse = strCallback + strResponse; // e.g. jQuery17019982320107502116_1378635607531(....) 

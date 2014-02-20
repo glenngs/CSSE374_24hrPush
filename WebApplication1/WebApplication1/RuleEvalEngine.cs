@@ -13,6 +13,7 @@ namespace CourseValidationSystem
     [Flags]
     public enum CourseOfferingEnum : int
     {
+        Invalid = 0x0,
         AllFall = 0x1,
         AllWinter = 0x1 << 1,
         AllSpring = 0x1 << 2,
@@ -239,6 +240,8 @@ namespace CourseValidationSystem
         {
             List<UIOutputDataInterfaceObject> outputData = new List<UIOutputDataInterfaceObject>();
 
+
+            // For every course in their schedule
             foreach (Course currentCourse in inputCourseList.courseList)
             {
                 // Check Prereqs/Coreqs
@@ -252,9 +255,20 @@ namespace CourseValidationSystem
                 {
                     coursePrereqs = prerequisites[currentCourse.courseId];
                 }
+
+                List<string> courseCoreqs;
+
+                if (!corequisites.ContainsKey(currentCourse.courseId))
+                {
+                    courseCoreqs = new List<string>();
+                }
+                else
+                {
+                    courseCoreqs = corequisites[currentCourse.courseId];
+                }
                 
 
-                // Failure Variables
+                // Failure Accumulation Variables
                 bool preAndCoRequisitesValid = true;
                 List<string> missingCourses = new List<string>();
                 List<string> outOfOrderCourses = new List<string>();
@@ -263,7 +277,7 @@ namespace CourseValidationSystem
                 foreach (string prereqToCheckFor in coursePrereqs)
                 {
                     // If they didn't put the course on their plan at all
-                    if(!inputCourseList.containsString(prereqToCheckFor))
+                    if(!inputCourseList.containsCourseId(prereqToCheckFor))
                     {
                         preAndCoRequisitesValid = false;
                         missingCourses.Add(prereqToCheckFor);
@@ -271,7 +285,8 @@ namespace CourseValidationSystem
                     if (preAndCoRequisitesValid)
                     {
                         // If they did put it on their schedule, is it before this class?
-                        Course preReqCourse = inputCourseList.findCourse(prereqToCheckFor);
+                        Course preReqCourse = inputCourseList.courseList.Find(i => i.Equals(prereqToCheckFor));
+                        
 
                         // If the year is after this, fail
                         if (preReqCourse.year > currentCourse.year)
@@ -294,6 +309,41 @@ namespace CourseValidationSystem
                 // TODO:
                 // Check all Corequisites here
                 // 
+                if (preAndCoRequisitesValid)
+                {
+                    // For each corequisite
+                    foreach (string coreqToCheckFor in courseCoreqs)
+                    {
+                        // If they didn't put the course on their plan at all
+                        if (!inputCourseList.containsCourseId(coreqToCheckFor))
+                        {
+                            preAndCoRequisitesValid = false;
+                            missingCourses.Add(coreqToCheckFor);
+                        }
+                        if (preAndCoRequisitesValid)
+                        {
+                            // If they did put it on their schedule, is it before this class?
+                            Course coReqCourse = inputCourseList.courseList.Find(i => i.Equals(coreqToCheckFor));
+
+
+                            // If the year is after this, fail
+                            if (coReqCourse.year > currentCourse.year)
+                            {
+                                preAndCoRequisitesValid = false;
+                                outOfOrderCourses.Add(coreqToCheckFor);
+                            }
+                            else if (coReqCourse.year == currentCourse.year)
+                            {
+                                if (coReqCourse.term > currentCourse.term)
+                                {
+                                    preAndCoRequisitesValid = false;
+                                    outOfOrderCourses.Add(coreqToCheckFor);
+                                }
+                            }
+                            // If we made it to here without any strings being added, awesome!
+                        }
+                    }
+                }
 
                 if (preAndCoRequisitesValid)
                 {
@@ -317,7 +367,7 @@ namespace CourseValidationSystem
                     if ((thisCourseOffered & termClassOffered) == 0)
                     {
                         // Failed to find a term when this is offered
-                        outputData.Add(new UIOutputDataInterfaceObject(("Class not offered on desired term " + thisCourseOffered + " ... " + termClassOffered).ToUpper(), (currentCourse.courseId).ToUpper()));
+                        outputData.Add(new UIOutputDataInterfaceObject(("Class not offered on desired term " + thisCourseOffered + " ... " + termClassOffered).ToUpper(), (currentCourse.courseId).ToUpper(), 20));
                     }
                     else{
                     
@@ -329,10 +379,25 @@ namespace CourseValidationSystem
                 else
                 {
                     
-                    string missingClassesError = "Missing PrerequisiteClasses: " + string.Join(", ", missingCourses.ToArray());
+                    // This code can be replaced by an actual error management/system response system
+                    string missingClassesError = "Missing Prerequisite Classes: " + string.Join(", ", missingCourses.ToArray());
                     string classesOutOfOrder = " Out of Order Classes: " + string.Join(", ", outOfOrderCourses.ToArray());
-                    string totalErrorMessage = (missingClassesError + classesOutOfOrder).ToUpper();
-                    outputData.Add(new UIOutputDataInterfaceObject(totalErrorMessage, (currentCourse.courseId).ToUpper()));
+                    if (missingCourses.Count != 0)
+                    {
+                        if (outOfOrderCourses.Count != 0)
+                        {
+                            outputData.Add(new UIOutputDataInterfaceObject((missingClassesError + classesOutOfOrder).ToUpper(), (currentCourse.courseId).ToUpper(), 11));
+                        }
+
+                        outputData.Add(new UIOutputDataInterfaceObject((missingClassesError).ToUpper(), (currentCourse.courseId).ToUpper(), 11));
+
+                    }
+                    else if (outOfOrderCourses.Count != 0)
+                    {
+                        outputData.Add(new UIOutputDataInterfaceObject((classesOutOfOrder).ToUpper(), (currentCourse.courseId).ToUpper(), 10));
+                    }
+                    
+                    
                 }
             }
             
@@ -341,25 +406,58 @@ namespace CourseValidationSystem
 
         private CourseOfferingEnum parseYearTermToEnum(int year, int inputNum)
         {
+            CourseOfferingEnum currentEnum = CourseOfferingEnum.Invalid;
+            
             if (inputNum == 10)
             {
-                return CourseOfferingEnum.AllFall;
+                currentEnum |= CourseOfferingEnum.AllFall;
             }
             if (inputNum == 20)
             {
-                return CourseOfferingEnum.AllFall;
+                currentEnum |= CourseOfferingEnum.AllWinter;
             }
             if (inputNum == 30)
             {
-                return CourseOfferingEnum.AllFall;
+                currentEnum |= CourseOfferingEnum.AllSpring;
             }
-            return CourseOfferingEnum.Unknown;
+                        
+            if (year % 2 == 0)
+            {
+                // Even year
+
+                if (inputNum == 10)
+                {
+                    currentEnum |= CourseOfferingEnum.EvenFall;
+                }
+                if (inputNum == 20)
+                {
+                    currentEnum |= CourseOfferingEnum.EvenWinter;
+                }
+                if (inputNum == 30)
+                {
+                    currentEnum |= CourseOfferingEnum.EvenSpring;
+                }
+            }
+
+            else
+            {
+                // Odd year
+
+                if (inputNum == 10)
+                {
+                    currentEnum |= CourseOfferingEnum.OddFall;
+                }
+                if (inputNum == 20)
+                {
+                    currentEnum |= CourseOfferingEnum.OddWinter;
+                }
+                if (inputNum == 30)
+                {
+                    currentEnum |= CourseOfferingEnum.OddSpring;
+                }
+            }
+            
+            return currentEnum;
         }
-
-
-
-
-
-
     }
 }
