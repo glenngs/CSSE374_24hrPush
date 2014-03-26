@@ -244,10 +244,15 @@ namespace CourseValidationSystem
             // For every course in their schedule
             foreach (Course currentCourse in inputCourseList.courseList)
             {
-                // Check Prereqs/Coreqs
+                // Failure Accumulation Variables
+                bool preAndCoRequisitesValid = true;
+                List<string> missingCourses = new List<string>();
+                List<string> outOfOrderCourses = new List<string>();
+
+                // Retrieve Prereqs/Coreqs
                 List<string> coursePrereqs;
 
-                if (!prerequisites.ContainsKey(currentCourse.courseId))
+                if (!this.prerequisites.ContainsKey(currentCourse.courseId))
                 {
                     coursePrereqs = new List<string>();
                 }
@@ -258,7 +263,7 @@ namespace CourseValidationSystem
 
                 List<string> courseCoreqs;
 
-                if (!corequisites.ContainsKey(currentCourse.courseId))
+                if (!this.corequisites.ContainsKey(currentCourse.courseId))
                 {
                     courseCoreqs = new List<string>();
                 }
@@ -268,113 +273,24 @@ namespace CourseValidationSystem
                 }
                 
 
-                // Failure Accumulation Variables
-                bool preAndCoRequisitesValid = true;
-                List<string> missingCourses = new List<string>();
-                List<string> outOfOrderCourses = new List<string>();
 
-                // For each prerequisite
-                foreach (string prereqToCheckFor in coursePrereqs)
-                {
-                    // If they didn't put the course on their plan at all
-                    if(!inputCourseList.containsCourseId(prereqToCheckFor))
-                    {
-                        preAndCoRequisitesValid = false;
-                        missingCourses.Add(prereqToCheckFor);
-                    }
-                    if (preAndCoRequisitesValid)
-                    {
-                        // If they did put it on their schedule, is it before this class?
-                        Course preReqCourse = inputCourseList.courseList.Find(i => i.Equals(prereqToCheckFor));
-                        
 
-                        // If the year is after this, fail
-                        if (preReqCourse.year > currentCourse.year)
-                        {
-                            preAndCoRequisitesValid = false;
-                            outOfOrderCourses.Add(prereqToCheckFor);
-                        }
-                        else if (preReqCourse.year == currentCourse.year)
-                        {
-                            if (preReqCourse.term >= currentCourse.term)
-                            {
-                                preAndCoRequisitesValid = false;
-                                outOfOrderCourses.Add(prereqToCheckFor);
-                            }
-                        }
-                        // If we made it to here without any strings being added, awesome!
-                    }
-                }
+                //
+                // Check all prerequisites here
+                //
 
-                // TODO:
+                preAndCoRequisitesValid = checkPrerequisites(inputCourseList, currentCourse, coursePrereqs, preAndCoRequisitesValid, missingCourses, outOfOrderCourses);
+
+                // 
                 // Check all Corequisites here
                 // 
-                if (preAndCoRequisitesValid)
-                {
-                    // For each corequisite
-                    foreach (string coreqToCheckFor in courseCoreqs)
-                    {
-                        // If they didn't put the course on their plan at all
-                        if (!inputCourseList.containsCourseId(coreqToCheckFor))
-                        {
-                            preAndCoRequisitesValid = false;
-                            missingCourses.Add(coreqToCheckFor);
-                        }
-                        if (preAndCoRequisitesValid)
-                        {
-                            // If they did put it on their schedule, is it before this class?
-                            Course coReqCourse = inputCourseList.courseList.Find(i => i.Equals(coreqToCheckFor));
 
+                preAndCoRequisitesValid = checkCorequisites(inputCourseList, currentCourse, courseCoreqs, preAndCoRequisitesValid, missingCourses, outOfOrderCourses);
 
-                            // If the year is after this, fail
-                            if (coReqCourse.year > currentCourse.year)
-                            {
-                                preAndCoRequisitesValid = false;
-                                outOfOrderCourses.Add(coreqToCheckFor);
-                            }
-                            else if (coReqCourse.year == currentCourse.year)
-                            {
-                                if (coReqCourse.term > currentCourse.term)
-                                {
-                                    preAndCoRequisitesValid = false;
-                                    outOfOrderCourses.Add(coreqToCheckFor);
-                                }
-                            }
-                            // If we made it to here without any strings being added, awesome!
-                        }
-                    }
-                }
 
                 if (preAndCoRequisitesValid)
                 {
-                    // All prereqs on their schedule
-                    // Ensure offered on possible term
-
-                    CourseOfferingEnum termClassOffered;
-                    if (!termOffered.ContainsKey(currentCourse.courseId))
-                    {
-                        termClassOffered = RuleEvalEngine.defaultTermOffered;
-                        // TODO
-                        // Throw Error Message
-                    }
-                    else
-                    {
-                        termClassOffered = termOffered[currentCourse.courseId];
-                    }
-
-
-                    CourseOfferingEnum thisCourseOffered = parseYearTermToEnum(currentCourse.year, currentCourse.term);
-                    if ((thisCourseOffered & termClassOffered) == 0)
-                    {
-                        // Failed to find a term when this is offered
-                        outputData.Add(new UIOutputDataInterfaceObject(("Class not offered on desired term " + thisCourseOffered + " ... " + termClassOffered).ToUpper(), (currentCourse.courseId).ToUpper(), 20));
-                    }
-                    else{
-                    
-                        // Wow it all worked! 
-                        //outputData.Add(new UIOutputDataInterfaceObject("OK", currentCourse.courseId));
-                    }
-
+                    checkTermOffered(outputData, currentCourse);
                 }
                 else
                 {
@@ -402,6 +318,104 @@ namespace CourseValidationSystem
             }
             
             return outputData;
+        }
+
+        private void checkTermOffered(List<UIOutputDataInterfaceObject> outputData, Course currentCourse)
+        {
+            // All prereqs on their schedule
+            // Ensure offered on possible term
+
+            CourseOfferingEnum termClassOffered;
+            if (!termOffered.ContainsKey(currentCourse.courseId))
+            {
+                termClassOffered = RuleEvalEngine.defaultTermOffered;
+                // TODO
+                // Throw Error Message
+            }
+            else
+            {
+                termClassOffered = termOffered[currentCourse.courseId];
+            }
+
+
+            CourseOfferingEnum thisCourseOffered = parseYearTermToEnum(currentCourse.year, currentCourse.term);
+            if ((thisCourseOffered & termClassOffered) == 0)
+            {
+                // Failed to find a term when this is offered
+                outputData.Add(new UIOutputDataInterfaceObject(("Class not offered on desired term " + thisCourseOffered + " ... " + termClassOffered).ToUpper(), (currentCourse.courseId).ToUpper(), 20));
+            }
+        }
+
+        private static bool checkCorequisites(CourseList inputCourseList, Course currentCourse, List<string> courseCoreqs, bool preAndCoRequisitesValid, List<string> missingCourses, List<string> outOfOrderCourses)
+        {
+            // For each corequisite
+            foreach (string coreqToCheckFor in courseCoreqs)
+            {
+                // If they didn't put the course on their plan at all
+                if (!inputCourseList.containsCourseId(coreqToCheckFor))
+                {
+                    preAndCoRequisitesValid = false;
+                    missingCourses.Add(coreqToCheckFor);
+                }
+                if (preAndCoRequisitesValid)
+                {
+                    // If they did put it on their schedule, is it before this class?
+                    Course coReqCourse = inputCourseList.courseList.Find(i => i.Equals(coreqToCheckFor));
+
+
+                    // If the year is after this, fail
+                    if (coReqCourse.year > currentCourse.year)
+                    {
+                        preAndCoRequisitesValid = false;
+                        outOfOrderCourses.Add(coreqToCheckFor);
+                    }
+                    else if (coReqCourse.year == currentCourse.year)
+                    {
+                        if (coReqCourse.term > currentCourse.term)
+                        {
+                            preAndCoRequisitesValid = false;
+                            outOfOrderCourses.Add(coreqToCheckFor);
+                        }
+                    }
+                    // If we made it to here without any strings being added, awesome!
+                }
+            }
+            return preAndCoRequisitesValid;
+        }
+
+        private static bool checkPrerequisites(CourseList inputCourseList, Course currentCourse, List<string> coursePrereqs, bool preAndCoRequisitesValid, List<string> missingCourses, List<string> outOfOrderCourses)
+        {
+            foreach (string prereqToCheckFor in coursePrereqs)
+            {
+                // If they didn't put the course on their plan at all
+                if (!inputCourseList.containsCourseId(prereqToCheckFor))
+                {
+                    preAndCoRequisitesValid = false;
+                    missingCourses.Add(prereqToCheckFor);
+                }
+                if (preAndCoRequisitesValid)
+                {
+                    // If they did put it on their schedule, is it before this class?
+                    Course preReqCourse = inputCourseList.courseList.Find(i => i.Equals(prereqToCheckFor));
+
+                    // If the year is after this, fail
+                    if (preReqCourse.year > currentCourse.year)
+                    {
+                        preAndCoRequisitesValid = false;
+                        outOfOrderCourses.Add(prereqToCheckFor);
+                    }
+                    else if (preReqCourse.year == currentCourse.year)
+                    {
+                        if (preReqCourse.term >= currentCourse.term)
+                        {
+                            preAndCoRequisitesValid = false;
+                            outOfOrderCourses.Add(prereqToCheckFor);
+                        }
+                    }
+                    // If we made it to here without any strings being added, awesome!
+                }
+            }
+            return preAndCoRequisitesValid;
         }
 
         private CourseOfferingEnum parseYearTermToEnum(int year, int inputNum)
