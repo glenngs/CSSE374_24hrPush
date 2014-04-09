@@ -46,6 +46,11 @@ namespace CourseValidationSystem
         // find course
         // this.courseList.Find(i => i.Equals(courseName))
 
+        public Course findCourseInList(string courseName)
+        {
+            return this.courseList.Find(i => i.Equals(courseName));
+        }
+
         public bool containsCourseId(string courseName)
         {
             foreach (Course crs in courseList)

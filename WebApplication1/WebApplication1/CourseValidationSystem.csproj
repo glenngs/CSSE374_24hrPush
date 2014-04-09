@@ -28,6 +28,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <FilesToIncludeForPublish>AllFilesInTheProject</FilesToIncludeForPublish>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -38,6 +39,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LumenWorks.Framework.IO">
+      <HintPath>.\LumenWorks.Framework.IO.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\WhenProcessingService\WhenProcessingService\Newtonsoft.Json.dll</HintPath>
@@ -69,9 +73,8 @@
     <Compile Include="CourseList.cs" />
     <Compile Include="CourseListFactory.cs" />
     <Compile Include="DBConnection.cs" />
-    <Compile Include="NonSessionStrategy.cs" />
+    <Compile Include="PrereqCSVParser.cs" />
     <Compile Include="UIInputDataInterfaceObject.cs" />
-    <Compile Include="UIDataParsingStrategy.cs" />
     <Compile Include="RuleEvalLoader.cs" />
     <Compile Include="RuleEvalEngine.cs" />
     <Compile Include="Course.cs" />
@@ -84,6 +87,9 @@
     <Compile Include="UIOutputDataInterfaceObject.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="CsvCourseData\SCRRTST.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="Properties\PublishProfiles\PublishToCSSE.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -107,7 +113,7 @@
         <WebProjectProperties>
           <UseIIS>True</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>0</DevelopmentServerPort>
+          <DevelopmentServerPort>4717</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
           <IISUrl>http://localhost:12411/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>

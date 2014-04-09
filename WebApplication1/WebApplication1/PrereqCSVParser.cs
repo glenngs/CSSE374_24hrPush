@@ -1,121 +1,20 @@
-﻿using System;
+﻿using LumenWorks.Framework.IO.Csv;
+using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using LumenWorks.Framework.IO.Csv;
 using System.IO;
+using System.Linq;
+using System.Web;
 
-namespace CSSE374CourseParser
+namespace CourseValidationSystem
 {
-    class Program
+    public class PrereqCSVParser
     {
-        static void Main(string[] args)
-        {
-
-
-            /*
-            // =========================
-            // START Kimono Data Parsing
-            // =========================
-
-            // Example of data parsing is here
-            // http://kimonify.kimonolabs.com/kimload?url=http%3A%2F%2Fwww.rose-hulman.edu%2Fcourse-catalog%2Fcourse-catalog-2013-2014%2Fcourse-descriptions%2Fcomputer-science-software-engineering.aspx
-
-
-            Dictionary<string, string> masterIDDescriptionTable = new Dictionary<string,string>();
-
-            try
-            {
-                DirectoryInfo info = new DirectoryInfo("CsvCourseData");
-
-                foreach (FileInfo fileInfo in info.GetFiles())
-                {
-                    Console.WriteLine(fileInfo.Name);
-
-                    using (CsvReader currentReader = new CsvReader(new StreamReader(fileInfo.FullName), false))
-                    {
-
-                        int fieldCount = currentReader.FieldCount;
-
-                        if (fieldCount != 2)
-                        {
-                            throw new Exception("Incorrect Field Count");
-                        }
-
-                        while (currentReader.ReadNextRecord())
-                        {
-                            string courseInfo = currentReader[0];
-                            string courseDescription = currentReader[1];
-
-                            char[] separator = { ' ' };
-                            string[] totalSplitLine = courseInfo.Split(separator);
-
-                            string firstWordOfInfo = totalSplitLine[0];
-
-                            if (containedInAllCourseIds(firstWordOfInfo))
-                            {
-                                masterIDDescriptionTable.Add(firstWordOfInfo, returnCourseDescription(currentReader[0], currentReader[1]));
-                            }
-                            else if (containedInAllCourseIds(totalSplitLine[0] + totalSplitLine[1]))
-                            {
-                                masterIDDescriptionTable.Add(totalSplitLine[0] + totalSplitLine[1], returnCourseDescription(currentReader[0], currentReader[1]));
-                            }
-                            else
-                            {
-                                Console.WriteLine("Failed to find course ID " + totalSplitLine[0] + totalSplitLine[1]);
-                            }
-
-                        }
-                    }
-                }
-                
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Exception Unhandled");
-                Console.WriteLine(e.Message);
-            }
-
-            // =======================
-            // END Kimono Data Parsing
-            // =======================
-
-            */
-
-
-
-
-            /*
-            foreach (KeyValuePair<string, string> kvp in masterIDDescriptionTable){
-                Console.WriteLine("ID: " + kvp.Key);
-                Console.WriteLine("Description: " + kvp.Value);
-            }
-            */
-
-            Console.WriteLine("==== Started ====");
-
-            processCSVPrereqData();
-
-            Console.ReadLine();
-        }
-
         public static List<CourseEntry> processCSVPrereqData()
         {
             try
             {
-                DirectoryInfo info = new DirectoryInfo("CsvCourseData");
 
-                string path = "";
-
-                foreach (FileInfo fileInfo in info.GetFiles())
-                {
-                    Console.WriteLine(fileInfo.Name);
-                    if (fileInfo.Name == "SCRRTST.csv")
-                    {
-                        path = fileInfo.FullName;
-                    }
-                }
+                string path = HttpContext.Current.Server.MapPath("/CsvCourseData/SCRRTST.csv"); ;
 
                 if (path == "")
                 {
@@ -162,7 +61,7 @@ namespace CSSE374CourseParser
                         string courseName = currentReader[0] + currentReader[1];
 
                         int termcode = Int32.Parse(currentReader[2]);
-                        
+
                         Console.WriteLine("Read in " + courseName + " at term " + termcode);
 
                         if (containsClassByName(courseName, coursePrereqEntries))
@@ -194,7 +93,7 @@ namespace CSSE374CourseParser
                             {
                                 // The one already in there is newer, ignore all this
                             }
-                            
+
                         }
                         else
                         {
@@ -224,11 +123,9 @@ namespace CSSE374CourseParser
 
                     return coursePrereqEntries;
 
+                    //CourseEntry manualEntry = coursePrereqEntries.Find(delegate(CourseEntry entry) { return entry.courseName == "CSSE461"; });
 
-
-//                    CourseEntry manualEntry = coursePrereqEntries.Find(delegate(CourseEntry entry) { return entry.courseName == "CSSE461"; });
-
-//                    Console.WriteLine(manualEntry.ToString());
+                    //Console.WriteLine(manualEntry.ToString());
 
                 }
             }
@@ -237,6 +134,7 @@ namespace CSSE374CourseParser
             {
                 Console.WriteLine();
                 Console.WriteLine("AHHHH " + e.Message);
+                return null;
             }
         }
 
@@ -271,7 +169,7 @@ namespace CSSE374CourseParser
             bool hasLeftParen = parseStringToBool(reader[12]);
             bool hasRightParen = parseStringToBool(reader[13]);
 
-            
+
 
             EvaluatableGroup overallGroup = entry.prereqStatement;
 
@@ -282,7 +180,7 @@ namespace CSSE374CourseParser
                 overallGroup.addItem(atomToAdd, conn);
             }
 
-            
+
 
             if (hasLeftParen)
             {
@@ -304,7 +202,7 @@ namespace CSSE374CourseParser
                 }
 
             }
-            
+
             if (hasRightParen)
             {
                 if (entry.currentlyParsingGroup == null)
@@ -318,7 +216,7 @@ namespace CSSE374CourseParser
 
                 entry.currentlyParsingGroup = null;
             }
-            
+
             if (!hasLeftParen && !hasRightParen)
             {
                 if (entry.currentlyParsingGroup != null)
@@ -335,10 +233,7 @@ namespace CSSE374CourseParser
 
         public abstract class EvaluatableStatement
         {
-            public bool evaluate()
-            {
-                return true;
-            }
+            public abstract bool evaluate(CourseList list, Course courseToCheck);
         }
 
         public class EvaluatableGroup : EvaluatableStatement
@@ -374,6 +269,35 @@ namespace CSSE374CourseParser
 
                 finalString = finalString + " )";
                 return finalString;
+            }
+
+            public override bool evaluate(CourseList list, Course courseToCheck)
+            {
+                Queue<EvaluatableStatement> tempStatementQueue = new Queue<EvaluatableStatement>(statementQueue);
+                Queue<Connector> tempConnectorQueue = new Queue<Connector>(connectorQueue);
+
+                bool statementValid = true;
+
+                while (tempStatementQueue.Count > 0)
+                {
+                    EvaluatableStatement currentStatement = tempStatementQueue.Dequeue();
+                    Connector prevConnector = tempConnectorQueue.Dequeue();
+
+                    if (prevConnector == Connector.NoConnector)
+                    {
+                        statementValid = currentStatement.evaluate(list, courseToCheck);
+                    }
+                    else if (prevConnector == Connector.AndConnector)
+                    {
+                        statementValid = statementValid && currentStatement.evaluate(list, courseToCheck);
+                    }
+                    else if (prevConnector == Connector.OrConnector)
+                    {
+                        statementValid = statementValid || currentStatement.evaluate(list, courseToCheck);
+                    }
+                }
+
+                return statementValid;
             }
         }
 
@@ -411,6 +335,61 @@ namespace CSSE374CourseParser
             {
                 return " " + courseName + " ";
             }
+            public override bool evaluate(CourseList list, Course courseToCheck)
+            {
+                // Ensure this class is in their schedule
+                if (!list.containsCourseId(this.courseName))
+                {
+                    // Not in their schedule at all!
+                    // BUILD ERROR MESSAGES HERE
+                    return false;
+                }
+                else
+                {
+                    // It's in their schedule, is it before this class?
+                    if (this.isCoreq == false)
+                    {
+                        // We cannot take it simultaneously
+                        // so ensure the checked class is after this class
+                        Course thisCourseInList = list.findCourseInList(this.courseName);
+
+                        return (yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term));
+                    }
+                    else
+                    {
+                        // We can take it simultaneously
+                        Course thisCourseInList = list.findCourseInList(this.courseName);
+
+                        return (yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term)
+                            || yearTermsEqual(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term));
+
+                    }
+                }
+
+            }
+        }
+
+        public static bool yearTermOneAfterYearTermTwo(int year1, int term1, int year2, int term2)
+        {
+            if (year1 > year2)
+            {
+                return true;
+            }
+            else if (year2 > year1)
+            {
+                return false;
+            }
+            else
+            {
+                // Same year
+                return (term1 > term2);
+            }
+
+        }
+
+        public static bool yearTermsEqual(int year1, int term1, int year2, int term2)
+        {
+            return ((year1 == year2) && (term1 == term2));
         }
 
         public class CourseEntry
@@ -437,13 +416,13 @@ namespace CSSE374CourseParser
 
             public override string ToString()
             {
-                
+
                 if (this.BADENTRY)
                 {
                     return this.courseName + " " + this.termCode + " IS VERY VERY VERY BAD";
                 }
-                
-                return this.courseName + " " + this.termCode + " ====== " + 
+
+                return this.courseName + " " + this.termCode + " ====== " +
                     prereqStatement.connectorQueue.Count + " ===== " + this.prereqStatement.ToString();
             }
 
@@ -483,9 +462,10 @@ namespace CSSE374CourseParser
             return true;
         }
 
-        public static bool containsClassByName(string name, List<CourseEntry> entries){
+        public static bool containsClassByName(string name, List<CourseEntry> entries)
+        {
 
-            foreach(CourseEntry entry in entries)
+            foreach (CourseEntry entry in entries)
             {
                 if (entry.courseName == name)
                 {
@@ -495,178 +475,5 @@ namespace CSSE374CourseParser
             return false;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-        static string returnCourseDescription(string courseData, string courseDataAndDescription)
-        {
-            if (!courseDataAndDescription.StartsWith(courseData)){
-                Console.WriteLine("Data Description Mismatch");
-                Console.WriteLine(courseData);
-                return "Failed Data";
-            }
-
-            return courseDataAndDescription.Remove(0, courseData.Length);
-        }
-
-
-        static bool containedInAllCourseIds(string firstWord)
-        {
-            string[] chemCourses = { "CHE110",
-                "CHE200",
-                "CHE201",
-                "CHE202",
-                "CHE300",
-                "CHE301",
-                "CHE303",
-                "CHE304",
-                "CHE310",
-                "CHE315",
-                "CHE320",
-                "CHE321",
-                "CHE404",
-                "CHE405",
-                "CHE409",
-                "CHE411",
-                "CHE412",
-                "CHE413",
-                "CHE416",
-                "CHE417",
-                "CHE418",
-                "CHE419",
-                "CHE420",
-                "CHE440",
-                "CHE441",
-                "CHE450",
-                "CHE461",
-                "CHE465",
-                "CHE470",
-                "CHE490",
-                "CHE499",
-                "CHE502",
-                "CHE503",
-                "CHE504",
-                "CHE505",
-                "CHE512",
-                "CHE513",
-                "CHE519",
-                "CHE521",
-                "CHE540",
-                "CHE545",
-                "CHE546",
-                "CHE590",
-                "CHE597",
-                "CHE598",
-                "CHE599" };
-            string[] csseCourses = { "CSSE120",
-                "CSSE132",
-                "CSSE220",
-                "CSSE221",
-                "CSSE230",
-                "CSSE232",
-                "CSSE241",
-                "CSSE290",
-                "CSSE304",
-                "CSSE325",
-                "CSSE332",
-                "CSSE333",
-                "CSSE335",
-                "CSSE351",
-                "CSSE371",
-                "CSSE372",
-                "CSSE373",
-                "CSSE374",
-                "CSSE375",
-                "CSSE376",
-                "CSSE402",
-                "CSSE403",
-                "CSSE404",
-                "CSSE413",
-                "CSSE432",
-                "CSSE433",
-                "CSSE442",
-                "CSSE451",
-                "CSSE453",
-                "CSSE461",
-                "CSSE463",
-                "CSSE473",
-                "CSSE474",
-                "CSSE477",
-                "CSSE479",
-                "CSSE481",
-                "CSSE487",
-                "CSSE488",
-                "CSSE489",
-                "CSSE490",
-                "CSSE491",
-                "CSSE492",
-                "CSSE493",
-                "CSSE494",
-                "CSSE495",
-                "CSSE496",
-                "CSSE497",
-                "CSSE498",
-                "CSSE499" };
-
-            List<string> allCourses = csseCourses.ToList<string>();
-
-            List<string> chemCoursesList = chemCourses.ToList<string>();
-            allCourses.AddRange(chemCoursesList);
-
-            
-
-            if (allCourses.Contains(firstWord))
-            {
-                return true;
-            }
-
-
-            return false;
-        }
-
-
- */
     }
 }

@@ -17,7 +17,7 @@ namespace CourseValidationSystem
 
         public Course(string courseId, int year, int term)
         {
-            this.courseId = courseId;
+            this.courseId = courseId.ToUpper();
             this.year = year;
             this.term = term;
         }

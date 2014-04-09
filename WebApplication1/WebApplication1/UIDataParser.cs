@@ -14,21 +14,21 @@ namespace CourseValidationSystem
     {
 
         private RuleEvalEngine evaluationEngine;
-        //private strategy thing;
-        private UIDataParsingStrategy strategy;
+
+        private CourseListFactory factory;
 
         public UIDataParser(RuleEvalEngine evalEngine)
         {
             this.evaluationEngine = evalEngine;
 
             // Setup strategy here
-            strategy = new NonSessionStrategy();
+            this.factory = new CourseListFactory();
         }
 
         public List<UIOutputDataInterfaceObject> parseInputDataGiveResponse(string inputJSONString)
         {
             // Parse input data here by using strategy
-            CourseList parsedCourseList = strategy.parseInputDataString(inputJSONString);
+            CourseList parsedCourseList = factory.parseJsonToCourseList(inputJSONString);
 
             return evaluationEngine.evaluateCourseList(parsedCourseList);
 

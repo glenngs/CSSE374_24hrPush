@@ -32,6 +32,8 @@ namespace CourseValidationSystem
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public void isClassScheduleValid(string input)
         {
+            
+            
             try
             {
                 List<UIOutputDataInterfaceObject> returnable = dataParser.parseInputDataGiveResponse(input);
