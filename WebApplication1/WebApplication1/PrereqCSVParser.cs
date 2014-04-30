@@ -40,6 +40,8 @@ namespace CourseValidationSystem
 
                     List<CourseEntry> coursePrereqEntries = new List<CourseEntry>();
 
+                    // 0 - 1 are the course name
+                    // 2 is the term this set of prerequisites are for - we choose the most recent
                     // 3 is SEQNUM - DROP
                     // 4 is useless
                     // 5 is useless
@@ -133,7 +135,7 @@ namespace CourseValidationSystem
             catch (Exception e)
             {
                 Console.WriteLine();
-                Console.WriteLine("AHHHH " + e.Message);
+                Console.WriteLine("Exception with message: " + e.Message);
                 return null;
             }
         }
@@ -233,7 +235,7 @@ namespace CourseValidationSystem
 
         public abstract class EvaluatableStatement
         {
-            public abstract bool evaluate(CourseList list, Course courseToCheck);
+            public abstract EvaluationError evaluate(CourseList list, Course courseToCheck);
         }
 
         public class EvaluatableGroup : EvaluatableStatement
@@ -271,34 +273,117 @@ namespace CourseValidationSystem
                 return finalString;
             }
 
-            public override bool evaluate(CourseList list, Course courseToCheck)
+            public override EvaluationError evaluate(CourseList list, Course courseToCheck)
             {
                 Queue<EvaluatableStatement> tempStatementQueue = new Queue<EvaluatableStatement>(statementQueue);
                 Queue<Connector> tempConnectorQueue = new Queue<Connector>(connectorQueue);
 
                 bool statementValid = true;
 
+                bool firstError = false;
+
+                EvaluationError finalError = new EvaluationError(false, "(", 0);
+
                 while (tempStatementQueue.Count > 0)
                 {
                     EvaluatableStatement currentStatement = tempStatementQueue.Dequeue();
                     Connector prevConnector = tempConnectorQueue.Dequeue();
 
+                    EvaluationError err = currentStatement.evaluate(list, courseToCheck);
+
                     if (prevConnector == Connector.NoConnector)
                     {
-                        statementValid = currentStatement.evaluate(list, courseToCheck);
+                        statementValid = err.isValid; //currentStatement.evaluate(list, courseToCheck);
+                        if (!err.isValid)
+                        {
+                            // Add this statement's contents to the total error string
+                            finalError.stringError += err.stringError;
+                            
+                            // Set the error code to the higher severity
+                            finalError.errorCode = returnHigherErrorCode(finalError.errorCode, err.errorCode);
+
+                            firstError = true;
+                        }
                     }
                     else if (prevConnector == Connector.AndConnector)
                     {
-                        statementValid = statementValid && currentStatement.evaluate(list, courseToCheck);
+                        statementValid = statementValid && err.isValid;
+                        if (!err.isValid)
+                        {
+                            if (firstError)
+                            {
+                                finalError.stringError += " And ";
+                            }
+
+                            // Add this statement's contents to the total error string
+                            finalError.stringError += err.stringError;
+
+                            // Set the error code to the higher severity
+                            finalError.errorCode = returnHigherErrorCode(finalError.errorCode, err.errorCode);
+
+                            firstError = true;
+                        }
                     }
                     else if (prevConnector == Connector.OrConnector)
                     {
-                        statementValid = statementValid || currentStatement.evaluate(list, courseToCheck);
+                        statementValid = statementValid || err.isValid;
+                        if (!err.isValid)
+                        {
+
+                            if (firstError)
+                            {
+                                finalError.stringError += " Or ";
+                            }
+                            // Add this statement's contents to the total error string
+                            finalError.stringError += err.stringError;
+
+                            // Set the error code to the higher severity
+                            finalError.errorCode = returnHigherErrorCode(finalError.errorCode, err.errorCode);
+
+                            firstError = true;
+                        }
                     }
                 }
 
-                return statementValid;
+                //
+                finalError.stringError += ")";
+                finalError.isValid = statementValid;
+                return finalError;
             }
+        }
+
+        public static int returnHigherErrorCode(int errorCodeBefore, int newErrorCode)
+        {
+            if (errorCodeBefore == 0)
+            {
+                // No error before, just take the new one
+                return newErrorCode;
+            }
+            else if (errorCodeBefore == 10)
+            {
+                return 10;
+            }
+            else if (errorCodeBefore == 11)
+            {
+                return 10;
+            }
+            else
+            {
+                // the error code before was 20
+                if (newErrorCode == 20)
+                {
+                    return 20;
+                }
+                else if (newErrorCode == 0)
+                {
+                    return 20;
+                }
+                else
+                {
+                    return 10;
+                }
+            }
+
         }
 
         public static string connectorToString(Connector conn)
@@ -317,7 +402,7 @@ namespace CourseValidationSystem
             }
             else
             {
-                return " WTF? THIS CANT EVEN HAPPEN ";
+                return " ERROR ";
             }
         }
 
@@ -335,14 +420,16 @@ namespace CourseValidationSystem
             {
                 return " " + courseName + " ";
             }
-            public override bool evaluate(CourseList list, Course courseToCheck)
+            public override EvaluationError evaluate(CourseList list, Course courseToCheck)
             {
+
                 // Ensure this class is in their schedule
                 if (!list.containsCourseId(this.courseName))
                 {
                     // Not in their schedule at all!
                     // BUILD ERROR MESSAGES HERE
-                    return false;
+
+                    return new EvaluationError(false, "Missing: " + this.courseName, 10);
                 }
                 else
                 {
@@ -353,15 +440,15 @@ namespace CourseValidationSystem
                         // so ensure the checked class is after this class
                         Course thisCourseInList = list.findCourseInList(this.courseName);
 
-                        return (yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term));
+                        return new EvaluationError(yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term), "Out of Order Prereq: " + this.courseName, 11);
                     }
                     else
                     {
                         // We can take it simultaneously
                         Course thisCourseInList = list.findCourseInList(this.courseName);
 
-                        return (yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term)
-                            || yearTermsEqual(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term));
+                        return new EvaluationError((yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term)
+                            || yearTermsEqual(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term)), "Out of Order Coreq: " + this.courseName, 11);
 
                     }
                 }

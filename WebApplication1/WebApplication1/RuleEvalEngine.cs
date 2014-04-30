@@ -95,14 +95,12 @@ namespace CourseValidationSystem
                     continue;
                 }
 
-                bool courseIsValid = entry.prereqStatement.evaluate(inputCourseList, currentCourse);
-                if (!courseIsValid)
+                EvaluationError err = entry.prereqStatement.evaluate(inputCourseList, currentCourse); 
+
+                
+                if (!err.isValid)
                 {
-                    outputData.Add(new UIOutputDataInterfaceObject("GenericError", currentCourse.courseId, 11));
-                }
-                else
-                {
-                    //outputData.Add(new UIOutputDataInterfaceObject("Totally Works", currentCourse.courseId, 11));
+                    outputData.Add(new UIOutputDataInterfaceObject(err.stringError, currentCourse.courseId, err.errorCode));
                 }
             }
 

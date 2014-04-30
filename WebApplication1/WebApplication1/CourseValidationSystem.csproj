@@ -73,6 +73,7 @@
     <Compile Include="CourseList.cs" />
     <Compile Include="CourseListFactory.cs" />
     <Compile Include="DBConnection.cs" />
+    <Compile Include="EvaluationError.cs" />
     <Compile Include="PrereqCSVParser.cs" />
     <Compile Include="UIInputDataInterfaceObject.cs" />
     <Compile Include="RuleEvalLoader.cs" />
@@ -88,7 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="CsvCourseData\SCRRTST.csv">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="Properties\PublishProfiles\PublishToCSSE.pubxml" />
     <None Include="Web.Debug.config">

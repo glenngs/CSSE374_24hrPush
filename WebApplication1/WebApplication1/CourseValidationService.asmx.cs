@@ -32,7 +32,20 @@ namespace CourseValidationSystem
         [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public void isClassScheduleValid(string input)
         {
-            
+            if (input == "")
+            {
+                string strResponse = "Warning: Empty Input String";
+                string strCallback = Context.Request.QueryString["callback"]; // Get callback method name. e.g. jQuery17019982320107502116_1378635607531
+
+                strResponse = strCallback + strResponse; // e.g. jQuery17019982320107502116_1378635607531(....) 
+
+                Context.Response.Clear();
+                Context.Response.ContentType = "application/json";
+                Context.Response.AddHeader("content-length", strResponse.Length.ToString());
+                Context.Response.Flush();
+
+                Context.Response.Write(strResponse);
+            }
             
             try
             {
