@@ -9,12 +9,177 @@ namespace CourseValidationSystem
 {
     public class PrereqCSVParser
     {
-        public static List<CourseEntry> processCSVPrereqData()
+        public static Dictionary<String, CourseOfferingEnum> processCSVScheduleData()
         {
             try
             {
+                string path;
+                try
+                {
+                    path = HttpContext.Current.Server.MapPath("/CsvCourseData/CourseSchedule.csv");
+                }
+                catch (Exception e)
+                {
+                    path = "/CsvCourseData/CourseSchedule.csv";
+                }
 
-                string path = HttpContext.Current.Server.MapPath("/CsvCourseData/SCRRTST.csv"); ;
+                if (path == "")
+                {
+                    Console.WriteLine("Failed to read file");
+                    return null;
+                }
+                else
+                {
+                    Console.WriteLine("File Found: " + path);
+                }
+
+                Dictionary<String, CourseOfferingEnum> courseOfferings = new Dictionary<string, CourseOfferingEnum>();
+
+                using (CsvReader currentReader = new CsvReader(new StreamReader(path), false))
+                {
+                    int fieldCount = currentReader.FieldCount;
+
+                    if (fieldCount != 14)
+                    {
+                        Console.WriteLine("Incorrect Field Count");
+                        throw new Exception("Incorrect Field Count");
+                    }
+
+                    currentReader.ReadNextRecord();
+
+                    // 0 is useless
+                    // 1 is the name
+                    // 2 - 4 are useless
+                    // 5 is the term
+                    // 6 is the year
+                    // 7 - 13 are useless
+
+                    // ===========
+                    //  MAIN LOOP
+                    // ===========
+
+                    while (currentReader.ReadNextRecord())
+                    {
+                        String courseName = currentReader[1];
+
+                        int term = Int32.Parse(currentReader[5]);
+                        int year = Int32.Parse(currentReader[6]);
+
+                        if (courseOfferings.ContainsKey(courseName))
+                        {
+                            courseOfferings[courseName] = courseOfferings[courseName] |
+                                                          PrereqCSVParser.parseYearTermToEnum(year, term);
+                        }
+                        else
+                        {
+                            courseOfferings.Add(courseName, PrereqCSVParser.parseYearTermToEnum(year, term));
+                        }
+                    }
+                }
+
+                return courseOfferings;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine();
+                Console.WriteLine("Exception with message: " + e.Message);
+                return null;
+            }
+        }
+
+        public static CourseOfferingEnum parseYearTermToEnum(int year, int inputNum)
+        {
+            CourseOfferingEnum currentEnum = CourseOfferingEnum.Invalid;
+
+            if (inputNum == 10)
+            {
+                currentEnum |= CourseOfferingEnum.Fall;
+            }
+            if (inputNum == 20)
+            {
+                currentEnum |= CourseOfferingEnum.Winter;
+            }
+            if (inputNum == 30)
+            {
+                currentEnum |= CourseOfferingEnum.Spring;
+            }
+            if (inputNum == 40)
+            {
+                currentEnum |= CourseOfferingEnum.Summer;
+            }
+
+            if (year % 2 == 0)
+            {
+                // Even year
+
+                if (inputNum == 10)
+                {
+                    currentEnum |= CourseOfferingEnum.EvenFall;
+                }
+                if (inputNum == 20)
+                {
+                    currentEnum |= CourseOfferingEnum.EvenWinter;
+                }
+                if (inputNum == 30)
+                {
+                    currentEnum |= CourseOfferingEnum.EvenSpring;
+                }
+                if (inputNum == 40)
+                {
+                    currentEnum |= CourseOfferingEnum.EvenSummer;
+                }
+            }
+
+            else
+            {
+                // Odd year
+
+                if (inputNum == 10)
+                {
+                    currentEnum |= CourseOfferingEnum.OddFall;
+                }
+                if (inputNum == 20)
+                {
+                    currentEnum |= CourseOfferingEnum.OddWinter;
+                }
+                if (inputNum == 30)
+                {
+                    currentEnum |= CourseOfferingEnum.OddSpring;
+                }
+                if (inputNum == 40)
+                {
+                    currentEnum |= CourseOfferingEnum.OddSummer;
+                }
+            }
+
+            return currentEnum;
+        }
+
+        public static List<CourseEntry> processCSVPrereqAndOfferingData()
+        {
+            Dictionary<String, CourseOfferingEnum> courseOfferings = PrereqCSVParser.processCSVScheduleData();
+
+            if (courseOfferings == null)
+            {
+                return null;
+            }
+
+            return processCSVPrereqData(courseOfferings);
+        }
+
+        public static List<CourseEntry> processCSVPrereqData(Dictionary<String, CourseOfferingEnum> courseOfferings)
+        {
+            try
+            {
+                string path;
+                try
+                {
+                    path = HttpContext.Current.Server.MapPath("/CsvCourseData/SCRRTST.csv");
+                }
+                catch (Exception e)
+                {
+                    path = "/CsvCourseData/SCRRTST.csv";
+                }
 
                 if (path == "")
                 {
@@ -36,7 +201,8 @@ namespace CourseValidationSystem
                         throw new Exception("Incorrect Field Count");
                     }
 
-                    Console.WriteLine(currentReader.ReadNextRecord());
+                    //Console.WriteLine(currentReader.ReadNextRecord());
+                    currentReader.ReadNextRecord();
 
                     List<CourseEntry> coursePrereqEntries = new List<CourseEntry>();
 
@@ -62,9 +228,20 @@ namespace CourseValidationSystem
 
                         string courseName = currentReader[0] + currentReader[1];
 
+                        CourseOfferingEnum termsOffered;
+
+                        if (courseOfferings.ContainsKey(courseName))
+                        {
+                            termsOffered = courseOfferings[courseName];
+                        }
+                        else
+                        {
+                            termsOffered = CourseOfferingEnum.Fall | CourseOfferingEnum.Spring |
+                                           CourseOfferingEnum.Summer | CourseOfferingEnum.Winter;
+                        }
                         int termcode = Int32.Parse(currentReader[2]);
 
-                        Console.WriteLine("Read in " + courseName + " at term " + termcode);
+                        //Console.WriteLine("Read in " + courseName + " at term " + termcode);
 
                         if (containsClassByName(courseName, coursePrereqEntries))
                         {
@@ -74,20 +251,20 @@ namespace CourseValidationSystem
                             {
                                 // Add it
 
-                                addData(currentReader, foundEntry);
+                                addData(currentReader, foundEntry, termsOffered);
                             }
                             else if (foundEntry.termCode < termcode)
                             {
                                 // We've found something newer, remove the old one and add a new one
                                 coursePrereqEntries.Remove(foundEntry);
 
-                                CourseEntry replacementEntry = new CourseEntry(courseName, termcode);
+                                CourseEntry replacementEntry = new CourseEntry(courseName, termcode, termsOffered);
                                 coursePrereqEntries.Add(replacementEntry);
 
-                                Console.WriteLine("Removed entry for " + courseName + " at term " + foundEntry.termCode);
+                                //Console.WriteLine("Removed entry for " + courseName + " at term " + foundEntry.termCode);
 
-                                // MAGIC
-                                addData(currentReader, replacementEntry);
+                                // MAGIC :D
+                                addData(currentReader, replacementEntry, termsOffered);
 
 
                             }
@@ -100,13 +277,13 @@ namespace CourseValidationSystem
                         else
                         {
                             // this class isn't in there yet
-                            CourseEntry newEntry = new CourseEntry(courseName, termcode);
+                            CourseEntry newEntry = new CourseEntry(courseName, termcode, termsOffered);
                             coursePrereqEntries.Add(newEntry);
 
-                            Console.WriteLine("Found new entry for " + courseName + " at term " + termcode);
+                            //Console.WriteLine("Found new entry for " + courseName + " at term " + termcode);
 
-                            // ALSO MAGIC
-                            addData(currentReader, newEntry);
+                            // ALSO MAGIC :D
+                            addData(currentReader, newEntry, termsOffered);
 
                         }
                     }
@@ -142,12 +319,12 @@ namespace CourseValidationSystem
 
 
         // Add all the line's data to the course entry data structure
-        public static void addData(CsvReader reader, CourseEntry entry)
+        public static void addData(CsvReader reader, CourseEntry entry, CourseOfferingEnum termsOffered)
         {
 
             if (entry.BADENTRY)
             {
-                Console.WriteLine("Ignored entry due to bad course entry at " + entry.courseName + entry.termCode);
+                //Console.WriteLine("Ignored entry due to bad course entry at " + entry.courseName + entry.termCode);
                 return;
             }
 
@@ -175,14 +352,12 @@ namespace CourseValidationSystem
 
             EvaluatableGroup overallGroup = entry.prereqStatement;
 
-            EvaluatableAtom atomToAdd = new EvaluatableAtom(prereqName, isCoreq);
+            EvaluatableCourse courseToAdd = new EvaluatableCourse(prereqName, isCoreq);
 
             if (hasLeftParen && hasRightParen)
             {
-                overallGroup.addItem(atomToAdd, conn);
+                overallGroup.addItem(courseToAdd, conn);
             }
-
-
 
             if (hasLeftParen)
             {
@@ -194,11 +369,11 @@ namespace CourseValidationSystem
                     entry.currentlyParsingGroup = new EvaluatableGroup();
 
                     overallGroup.addItem(entry.currentlyParsingGroup, conn);
-                    entry.currentlyParsingGroup.addItem(atomToAdd, Connector.NoConnector);
+                    entry.currentlyParsingGroup.addItem(courseToAdd, Connector.NoConnector);
                 }
                 else
                 {
-                    Console.WriteLine("Bad Entry Detected at " + entry.courseName + " " + entry.termCode);
+                    //Console.WriteLine("Bad Entry Detected at " + entry.courseName + " " + entry.termCode);
                     entry.BADENTRY = true;
                     return;
                 }
@@ -209,12 +384,12 @@ namespace CourseValidationSystem
             {
                 if (entry.currentlyParsingGroup == null)
                 {
-                    Console.WriteLine("Bad Entry Detected at " + entry.courseName + " " + entry.termCode);
+                    //Console.WriteLine("Bad Entry Detected at " + entry.courseName + " " + entry.termCode);
                     entry.BADENTRY = true;
                     return;
                 }
 
-                entry.currentlyParsingGroup.addItem(atomToAdd, conn);
+                entry.currentlyParsingGroup.addItem(courseToAdd, conn);
 
                 entry.currentlyParsingGroup = null;
             }
@@ -223,11 +398,11 @@ namespace CourseValidationSystem
             {
                 if (entry.currentlyParsingGroup != null)
                 {
-                    entry.currentlyParsingGroup.addItem(atomToAdd, conn);
+                    entry.currentlyParsingGroup.addItem(courseToAdd, conn);
                 }
                 else
                 {
-                    overallGroup.addItem(atomToAdd, conn);
+                    overallGroup.addItem(courseToAdd, conn);
                 }
             }
 
@@ -406,12 +581,12 @@ namespace CourseValidationSystem
             }
         }
 
-        public class EvaluatableAtom : EvaluatableStatement
+        public class EvaluatableCourse : EvaluatableStatement
         {
             public string courseName;
             public bool isCoreq;
 
-            public EvaluatableAtom(string courseName, bool allowConcurrency)
+            public EvaluatableCourse(string courseName, bool allowConcurrency)
             {
                 this.courseName = courseName;
                 this.isCoreq = allowConcurrency;
@@ -439,21 +614,51 @@ namespace CourseValidationSystem
                         // We cannot take it simultaneously
                         // so ensure the checked class is after this class
                         Course thisCourseInList = list.findCourseInList(this.courseName);
-
-                        return new EvaluationError(yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term), "Out of Order Prereq: " + this.courseName, 11);
+                        if (!(yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year,
+                            thisCourseInList.term)))
+                        {
+                            return new EvaluationError(false, "Out of Order Prereq: " + this.courseName, 11);
+                        }
+                        else
+                        {
+                            return new EvaluationError(true, "", 20);
+                        }
                     }
                     else
                     {
                         // We can take it simultaneously
                         Course thisCourseInList = list.findCourseInList(this.courseName);
 
-                        return new EvaluationError((yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term)
-                            || yearTermsEqual(courseToCheck.year, courseToCheck.term, thisCourseInList.year, thisCourseInList.term)), "Out of Order Coreq: " + this.courseName, 11);
+                        if (!(yearTermOneAfterYearTermTwo(courseToCheck.year, courseToCheck.term, thisCourseInList.year,
+                            thisCourseInList.term)
+                             ||
+                             yearTermsEqual(courseToCheck.year, courseToCheck.term, thisCourseInList.year,
+                                 thisCourseInList.term)))
+                        {
+                            return new EvaluationError(false, "Out of Order Coreq: " + this.courseName, 11);
+                        }
+                        else
+                        {
+                            return new EvaluationError(true, "", 20);
+                        }
+
 
                     }
                 }
-
             }
+
+
+
+
+        }
+
+        public static string CourseOfferingEnumToString(CourseOfferingEnum courseOffering)
+        {
+            String fall = courseOffering.HasFlag(CourseOfferingEnum.Fall) ? " Fall" : "";
+            String winter = courseOffering.HasFlag(CourseOfferingEnum.Winter) ? " Winter" : "";
+            String spring = courseOffering.HasFlag(CourseOfferingEnum.Spring) ? " Spring" : "";
+            String summer = courseOffering.HasFlag(CourseOfferingEnum.Summer) ? " Summer" : "";
+            return fall + winter + spring + summer;
         }
 
         public static bool yearTermOneAfterYearTermTwo(int year1, int term1, int year2, int term2)
@@ -483,6 +688,7 @@ namespace CourseValidationSystem
         {
             public string courseName;
             public int termCode;
+            public CourseOfferingEnum termsOffered;
 
             public bool BADENTRY;
 
@@ -490,13 +696,15 @@ namespace CourseValidationSystem
 
             public EvaluatableGroup currentlyParsingGroup;
 
-            public CourseEntry(string courseName, int termCode)
+            public CourseEntry(string courseName, int termCode, CourseOfferingEnum termsOffered)
             {
                 this.courseName = courseName;
                 this.termCode = termCode;
 
                 this.BADENTRY = false;
                 this.currentlyParsingGroup = null;
+
+                this.termsOffered = termsOffered;
 
                 this.prereqStatement = new EvaluatableGroup();
             }
@@ -513,7 +721,34 @@ namespace CourseValidationSystem
                     prereqStatement.connectorQueue.Count + " ===== " + this.prereqStatement.ToString();
             }
 
+            private EvaluationError checkTermOffered(CourseOfferingEnum termScheduled)
+            {
+                // First, check if it's valid
+                if ((termScheduled & this.termsOffered) > 0)
+                {
+                    return new EvaluationError(true, "", 20);
+                }
+                // If it's not valid, send an error message
+                else
+                {
+                    return new EvaluationError(false,
+                        "Attempted To Take:" + CourseOfferingEnumToString(termScheduled) + " Offered:" +
+                        CourseOfferingEnumToString(termsOffered) + " ", 20);
+                }
+            }
 
+            public EvaluationError evaluate(CourseList list, Course courseToCheck, CourseOfferingEnum scheduledTerm)
+            {
+                EvaluationError error = this.prereqStatement.evaluate(list, courseToCheck);
+
+                if (error.isValid)
+                {
+                    // We're valid so far - now we need to check the term they tried to take
+                    return checkTermOffered(scheduledTerm);
+                }
+                
+                return error;
+            }
         }
 
         public enum Connector

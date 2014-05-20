@@ -212,7 +212,7 @@ namespace CourseValidationSystem
             Dictionary<string, CourseOfferingEnum> termOffered = new Dictionary<string, CourseOfferingEnum>();
             foreach (string courseID in corequisites.Keys)
             {
-                termOffered.Add(courseID, (CourseOfferingEnum.AllFall | CourseOfferingEnum.AllSpring | CourseOfferingEnum.AllWinter));
+                termOffered.Add(courseID, (CourseOfferingEnum.Fall | CourseOfferingEnum.Spring | CourseOfferingEnum.Winter));
             }
 
             return new DBAccessReturnValues(prerequisites, corequisites, termOffered);

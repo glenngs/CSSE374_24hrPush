@@ -14,10 +14,10 @@ namespace CourseValidationSystem
     public enum CourseOfferingEnum : int
     {
         Invalid = 0x0,
-        AllFall = 0x1,
-        AllWinter = 0x1 << 1,
-        AllSpring = 0x1 << 2,
-        AllSummer = 0x1 << 3,
+        Fall = 0x1,
+        Winter = 0x1 << 1,
+        Spring = 0x1 << 2,
+        Summer = 0x1 << 3,
         EvenFall = 0x1 << 4,
         EvenWinter = 0x1 << 5,
         EvenSpring = 0x1 << 6,
@@ -37,7 +37,7 @@ namespace CourseValidationSystem
         private Dictionary<string, CourseOfferingEnum> termOffered;
         private DBConnection databaseConnection;
 
-        private static CourseOfferingEnum defaultTermOffered = (CourseOfferingEnum.AllFall | CourseOfferingEnum.AllSpring | CourseOfferingEnum.AllWinter);
+        private static CourseOfferingEnum defaultTermOffered = (CourseOfferingEnum.Fall | CourseOfferingEnum.Spring | CourseOfferingEnum.Winter);
 
         List<PrereqCSVParser.CourseEntry> coursePrereqEntries;
 
@@ -54,8 +54,9 @@ namespace CourseValidationSystem
             this.termOffered = returnvals.termOffered;
 
             // AND IT BEGINS
-            this.coursePrereqEntries = PrereqCSVParser.processCSVPrereqData();
-            
+            //this.coursePrereqEntries = PrereqCSVParser.processCSVPrereqData();
+            //this.courseOfferings = PrereqCSVParser.processCSVScheduleData();
+            this.coursePrereqEntries = PrereqCSVParser.processCSVPrereqAndOfferingData();
 
         }
 
@@ -95,7 +96,10 @@ namespace CourseValidationSystem
                     continue;
                 }
 
-                EvaluationError err = entry.prereqStatement.evaluate(inputCourseList, currentCourse); 
+                CourseOfferingEnum attemptingToTake = PrereqCSVParser.parseYearTermToEnum(currentCourse.year,
+                    currentCourse.term);
+
+                EvaluationError err = entry.evaluate(inputCourseList, currentCourse, attemptingToTake); 
 
                 
                 if (!err.isValid)
@@ -105,85 +109,28 @@ namespace CourseValidationSystem
             }
 
 
-            /*
-            // For every course in their schedule
-            foreach (Course currentCourse in inputCourseList.courseList)
-            {
-                // Failure Accumulation Variables
-                bool preAndCoRequisitesValid = true;
-                List<string> missingCourses = new List<string>();
-                List<string> outOfOrderCourses = new List<string>();
 
-                // Retrieve Prereqs/Coreqs
-                List<string> coursePrereqs;
-
-                if (!this.prerequisites.ContainsKey(currentCourse.courseId))
-                {
-                    coursePrereqs = new List<string>();
-                }
-                else
-                {
-                    coursePrereqs = prerequisites[currentCourse.courseId];
-                }
-
-                List<string> courseCoreqs;
-
-                if (!this.corequisites.ContainsKey(currentCourse.courseId))
-                {
-                    courseCoreqs = new List<string>();
-                }
-                else
-                {
-                    courseCoreqs = corequisites[currentCourse.courseId];
-                }
-                
-
-
-
-                //
-                // Check all prerequisites here
-                //
-
-                preAndCoRequisitesValid = checkPrerequisites(inputCourseList, currentCourse, coursePrereqs, preAndCoRequisitesValid, missingCourses, outOfOrderCourses);
-
-                // 
-                // Check all Corequisites here
-                // 
-
-                preAndCoRequisitesValid = checkCorequisites(inputCourseList, currentCourse, courseCoreqs, preAndCoRequisitesValid, missingCourses, outOfOrderCourses);
-
-
-                if (preAndCoRequisitesValid)
-                {
-                    checkTermOffered(outputData, currentCourse);
-                }
-                else
-                {
-                    
-                    // This code can be replaced by an actual error management/system response system
-                    string missingClassesError = "Missing Prerequisite Classes: " + string.Join(", ", missingCourses.ToArray());
-                    string classesOutOfOrder = " Out of Order Classes: " + string.Join(", ", outOfOrderCourses.ToArray());
-                    if (missingCourses.Count != 0)
-                    {
-                        if (outOfOrderCourses.Count != 0)
-                        {
-                            outputData.Add(new UIOutputDataInterfaceObject((missingClassesError + classesOutOfOrder).ToUpper(), (currentCourse.courseId).ToUpper(), 11));
-                        }
-
-                        outputData.Add(new UIOutputDataInterfaceObject((missingClassesError).ToUpper(), (currentCourse.courseId).ToUpper(), 11));
-
-                    }
-                    else if (outOfOrderCourses.Count != 0)
-                    {
-                        outputData.Add(new UIOutputDataInterfaceObject((classesOutOfOrder).ToUpper(), (currentCourse.courseId).ToUpper(), 10));
-                    }
-                    
-                    
-                }
-            }
-            */
             return outputData;
         }
+
+
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 
         private void checkTermOffered(List<UIOutputDataInterfaceObject> outputData, Course currentCourse)
         {
@@ -283,60 +230,82 @@ namespace CourseValidationSystem
             return preAndCoRequisitesValid;
         }
 
-        private CourseOfferingEnum parseYearTermToEnum(int year, int inputNum)
+
+
+
+// For every course in their schedule
+foreach (Course currentCourse in inputCourseList.courseList)
+{
+    // Failure Accumulation Variables
+    bool preAndCoRequisitesValid = true;
+    List<string> missingCourses = new List<string>();
+    List<string> outOfOrderCourses = new List<string>();
+
+    // Retrieve Prereqs/Coreqs
+    List<string> coursePrereqs;
+
+    if (!this.prerequisites.ContainsKey(currentCourse.courseId))
+    {
+        coursePrereqs = new List<string>();
+    }
+    else
+    {
+        coursePrereqs = prerequisites[currentCourse.courseId];
+    }
+
+    List<string> courseCoreqs;
+
+    if (!this.corequisites.ContainsKey(currentCourse.courseId))
+    {
+        courseCoreqs = new List<string>();
+    }
+    else
+    {
+        courseCoreqs = corequisites[currentCourse.courseId];
+    }
+                
+
+
+
+    //
+    // Check all prerequisites here
+    //
+
+    preAndCoRequisitesValid = checkPrerequisites(inputCourseList, currentCourse, coursePrereqs, preAndCoRequisitesValid, missingCourses, outOfOrderCourses);
+
+    // 
+    // Check all Corequisites here
+    // 
+
+    preAndCoRequisitesValid = checkCorequisites(inputCourseList, currentCourse, courseCoreqs, preAndCoRequisitesValid, missingCourses, outOfOrderCourses);
+
+
+    if (preAndCoRequisitesValid)
+    {
+        checkTermOffered(outputData, currentCourse);
+    }
+    else
+    {
+                    
+        // This code can be replaced by an actual error management/system response system
+        string missingClassesError = "Missing Prerequisite Classes: " + string.Join(", ", missingCourses.ToArray());
+        string classesOutOfOrder = " Out of Order Classes: " + string.Join(", ", outOfOrderCourses.ToArray());
+        if (missingCourses.Count != 0)
         {
-            CourseOfferingEnum currentEnum = CourseOfferingEnum.Invalid;
-            
-            if (inputNum == 10)
+            if (outOfOrderCourses.Count != 0)
             {
-                currentEnum |= CourseOfferingEnum.AllFall;
-            }
-            if (inputNum == 20)
-            {
-                currentEnum |= CourseOfferingEnum.AllWinter;
-            }
-            if (inputNum == 30)
-            {
-                currentEnum |= CourseOfferingEnum.AllSpring;
-            }
-                        
-            if (year % 2 == 0)
-            {
-                // Even year
-
-                if (inputNum == 10)
-                {
-                    currentEnum |= CourseOfferingEnum.EvenFall;
-                }
-                if (inputNum == 20)
-                {
-                    currentEnum |= CourseOfferingEnum.EvenWinter;
-                }
-                if (inputNum == 30)
-                {
-                    currentEnum |= CourseOfferingEnum.EvenSpring;
-                }
+                outputData.Add(new UIOutputDataInterfaceObject((missingClassesError + classesOutOfOrder).ToUpper(), (currentCourse.courseId).ToUpper(), 11));
             }
 
-            else
-            {
-                // Odd year
+            outputData.Add(new UIOutputDataInterfaceObject((missingClassesError).ToUpper(), (currentCourse.courseId).ToUpper(), 11));
 
-                if (inputNum == 10)
-                {
-                    currentEnum |= CourseOfferingEnum.OddFall;
-                }
-                if (inputNum == 20)
-                {
-                    currentEnum |= CourseOfferingEnum.OddWinter;
-                }
-                if (inputNum == 30)
-                {
-                    currentEnum |= CourseOfferingEnum.OddSpring;
-                }
-            }
-            
-            return currentEnum;
         }
+        else if (outOfOrderCourses.Count != 0)
+        {
+            outputData.Add(new UIOutputDataInterfaceObject((classesOutOfOrder).ToUpper(), (currentCourse.courseId).ToUpper(), 10));
+        }
+                    
+                    
     }
 }
+*/

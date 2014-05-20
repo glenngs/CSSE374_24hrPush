@@ -9,9 +9,14 @@ namespace CourseValidationSystem
     {
         public string ErrorMessage;
         public string Class;
-        public int ErrorCode;
 
-        // 
+        public int ErrorCode;
+        // 10 is missing class
+        // 11 is out of order class
+        // 20 is not offered on term
+        // More generally,
+        // Starts with 1 is a critical error (red)
+        // Starts with 2 is a warning (yellow)
 
         public UIOutputDataInterfaceObject(string errorMessage, string classID, int errorCode)
         {

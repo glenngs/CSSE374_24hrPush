@@ -25,7 +25,6 @@ namespace CourseValidationSystem
         public CourseValidationService()
         {
             dataParser = RuleEvalLoader.loadRulesEngine();
-            
         }
 
         [WebMethod]
@@ -77,6 +76,38 @@ namespace CourseValidationSystem
                 Context.Response.Flush();
 
                 Context.Response.Write(strResponse);
+            }
+        }
+
+        public string testIsClassScheduleValid(string input)
+        {
+            if (input == "")
+            {
+                string strResponse = "{'FAIL: Empty Input String'}";
+
+                strResponse = strResponse; // e.g. jQuery17019982320107502116_1378635607531(....) 
+
+                return strResponse;
+            }
+
+            try
+            {
+                List<UIOutputDataInterfaceObject> returnable = dataParser.parseInputDataGiveResponse(input);
+
+                string strResponse = JsonConvert.SerializeObject(returnable);
+
+                strResponse = strResponse; // e.g. jQuery17019982320107502116_1378635607531(....) 
+
+                return strResponse;
+
+            }
+            catch (Exception e)
+            {
+                string strResponse = "{'FAIL: " + e.Message + "'}";
+
+                strResponse = strResponse; // e.g. jQuery17019982320107502116_1378635607531(....) 
+
+                return strResponse;
             }
         }
 
